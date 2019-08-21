@@ -112,8 +112,8 @@ int main()
 
 	dynamicsWorld->setGravity({ 0,-10,0 });
 
-	Cube cube(dynamicsWorld);
-	//Cube cuba;
+	Cube cube({0.0f, 0.4f,0.0f}, dynamicsWorld,1);
+	Cube cuba({0.18f,-0.4f,0.0f}, dynamicsWorld,0);
 	//cube->m_g = g;
 
 	while (!glfwWindowShouldClose(window))
@@ -129,7 +129,7 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		cube.draw(camera);
-		//cuba.draw(camera);
+		cuba.draw(camera);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

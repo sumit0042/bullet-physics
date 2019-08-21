@@ -52,10 +52,25 @@ public:
 	glm::mat4x3 m_faces[no_rects];
 	Vertex m_c[no_rects][4];
 
-	Cube(btDiscreteDynamicsWorld* world)
+	Cube(btVector3 pos, btDiscreteDynamicsWorld* world, float m):mass(m)
 	{
 		m_bind_buffer();
 
+		//physics
+		auto box = new btBoxShape({ .2,.2,.2});
+		btTransform startTransform;
+		startTransform.setIdentity();
+		btVector3 localInertia(0, 0, 0);
+		if (mass > 0)
+			box->calculateLocalInertia(mass, localInertia);
+
+		startTransform.setOrigin(pos);
+		auto motionstate = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(mass, motionstate, box, localInertia);
+		m_rigid = new btRigidBody(rbInfo);
+		world->addRigidBody(m_rigid);
+
+		//
 		for (size_t i = 0; i < no_rects; i++)
 		{
 			program[i] = create_program();
@@ -98,10 +113,25 @@ public:
 		{
 			glUseProgram(program[i]);
 
-			glm::mat4 model = glm::mat4(1.0f);
+			glm::mat4 ModelMatrix(1.0f);
+			auto trans = m_rigid->getWorldTransform();
+
+			glm::value_ptr(ModelMatrix);
+			double mat[4][4] = {};
+			float matf[4][4];
+			trans.getOpenGLMatrix((btScalar*)& mat[0][0]);
+
+			for (int i = 0;i < 4;++i)
+				for (int j = 0;j < 4;++j)
+					matf[i][j] = mat[i][j];
+
+			auto loc = glGetUniformLocation(program[i], "model");
+			glUniformMatrix4fv(loc, 1, GL_FALSE, &matf[0][0]);
+
+			/*glm::mat4 model = glm::mat4(1.0f);
 			model[3][0] = 0.6f;
 			GLuint modelLoc = glGetUniformLocation(program[i], "model");
-			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+			glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));*/
 
 			glm::mat4 view = camera.GetViewMatrix();
 			GLint viewLoc = glGetUniformLocation(program[i], "view");
