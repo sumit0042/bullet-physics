@@ -10,10 +10,12 @@
 #include<string>
 #include<tuple>
 #include<Windows.h>
+#include<vector>
 
 #include "Shader.h"
 #include "Camera.h"
-#include "Data.h"
+#include "Cube.h"
+#include "Sphere.h"
 
 #include "C:\Users\Skumar3\source\repos\libraries\bullet3-master\src\btBulletDynamicsCommon.h"
 
@@ -26,7 +28,7 @@ using namespace std;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(0.0f, 0.0f, 0.8f));
+Camera camera(glm::vec3(0.0f, -0.9f, 0.8f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -78,6 +80,106 @@ void processInput(GLFWwindow* window)
 			PROGRAM AND DATA BINDING
 =======================================================================================================================*/
 
+std::vector<glm::mat4x3> cube_faces(bool floor)
+{
+	std::vector<glm::mat4x3> faces(6);
+	glm::mat4x3 frontFace = {
+		{-0.2f,-0.2f, 0.2f},
+		{-0.2f, 0.2f, 0.2f},
+		{ 0.2f, 0.2f, 0.2f},
+		{ 0.2f,-0.2f, 0.2f}
+	};
+
+	glm::mat4x3 backFace = {
+		{-0.2f,-0.2f,-0.2f},
+		{-0.2f, 0.2f,-0.2f},
+		{ 0.2f, 0.2f,-0.2f},
+		{ 0.2f,-0.2f,-0.2f},
+	};
+
+	glm::mat4x3 topFace = {
+		{ 0.2f, 0.2f,-0.2f},
+		{-0.2f, 0.2f,-0.2f},
+		{-0.2f, 0.2f, 0.2f},
+		{ 0.2f, 0.2f, 0.2f}
+	};
+
+	glm::mat4x3 bottomFace = {
+		{-0.2f,-0.2f, 0.2f},
+		{-0.2f,-0.2f,-0.2f},
+		{ 0.2f,-0.2f,-0.2f},
+		{ 0.2f,-0.2f, 0.2f},
+	};
+
+	glm::mat4x3 rightFace = {
+		{ 0.2f, 0.2f, 0.2f},
+		{ 0.2f, 0.2f,-0.2f},
+		{ 0.2f,-0.2f,-0.2f},
+		{ 0.2f,-0.2f, 0.2f},
+	};
+
+	glm::mat4x3 leftFace = {
+		{-0.2f, 0.2f, 0.2f},
+		{-0.2f,-0.2f, 0.2f},
+		{-0.2f,-0.2f,-0.2f},
+		{-0.2f, 0.2f,-0.2f},
+	};
+
+	if (floor)
+	{
+		frontFace = {
+			{-1.0f,-0.05f, 1.0f},
+			{-1.0f, 0.05f, 1.0f},
+			{ 1.0f, 0.05f, 1.0f},
+			{ 1.0f,-0.05f, 1.0f}
+		};
+
+		backFace = {
+			{-1.0f,-0.05f,-1.0f},
+			{-1.0f, 0.05f,-1.0f},
+			{ 1.0f, 0.05f,-1.0f},
+			{ 1.0f,-0.05f,-1.0f}
+		};
+
+		topFace = {
+			{ 1.0f, 0.05f, 1.0f},
+			{ 1.0f, 0.05f,-1.0f},
+			{-1.0f, 0.05f,-1.0f},
+			{-1.0f, 0.05f, 1.0f}
+		};
+
+		bottomFace = {
+			{ 1.0f,-0.05f, 1.0f},
+			{ 1.0f,-0.05f,-1.0f},
+			{-1.0f,-0.05f,-1.0f},
+			{-1.0f,-0.05f, 1.0f}
+		};
+
+		rightFace = {
+			{ 1.0f, 0.05f, 1.0f},
+			{ 1.0f, 0.05f,-1.0f},
+			{ 1.0f, 0.05f,-1.0f},
+			{ 1.0f, 0.05f, 1.0f},
+		};
+
+		leftFace = {
+			{ -1.0f, 0.05f, 1.0f},
+			{ -1.0f, 0.05f,-1.0f},
+			{ -1.0f,-0.05f,-1.0f},
+			{ -1.0f,-0.05f, 1.0f},
+		};
+	}
+
+	faces[0] = frontFace;
+	faces[1] = backFace;
+	faces[2] = leftFace;
+	faces[3] = bottomFace;
+	faces[4] = rightFace;
+	faces[5] = topFace;
+
+	return faces;
+}
+
 int main()
 {
 	auto collisionConfiguration = new btDefaultCollisionConfiguration();
@@ -112,9 +214,14 @@ int main()
 
 	dynamicsWorld->setGravity({ 0,-10,0 });
 
-	Cube cube({0.0f, 0.4f,0.0f}, dynamicsWorld,1);
-	Cube cuba({0.18f,-0.4f,0.0f}, dynamicsWorld,0);
+	std::vector<glm::mat4x3> faces = cube_faces(true);
+	std::vector<glm::mat4x3> facesC = cube_faces(false);
+	//Cube cuby(faces, { 0.24f, 0.4f,0.0f}, dynamicsWorld,1);
+	Cube cube(false, facesC, {-0.24f, 0.4f,0.0f}, dynamicsWorld,10);
+	Cube cuba(false, facesC, {-0.24f, 0.8f,0.0f }, dynamicsWorld,0);
 	//cube->m_g = g;
+	Cube floor(true, faces, {0.0f, -0.95f, 0.0f}, dynamicsWorld, 0);
+	Sphere sphere(0.02f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -129,7 +236,10 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		cube.draw(camera);
-		cuba.draw(camera);
+		/*cuba.draw(camera);
+		cuby.draw(camera);*/
+		floor.draw(camera);
+		sphere.draw(camera);
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);
