@@ -20,16 +20,31 @@ public:
 	GLuint m_g;
 	GLuint m_program;
 	float m_r;
+	float m_mass = 1;
+	btRigidBody* m_rigid = 0;
 	Vertex m_c[12];
 	Vertex m_vertices[20][3];
 
 	glm::vec3 m_origin;
 	
-	Sphere(/*glm::vec3 origin, */float r):m_r(r)
+	Sphere(btVector3 pos, btDiscreteDynamicsWorld* world, float r, float m):m_r(r), m_mass(m)
 	{
-		/*m_origin = origin;*/
 		create_vertex_data();
 		this->m_bind_buffer();
+
+		btSphereShape* sphereBox = new btSphereShape(m_r);
+		btTransform startTransform;
+		startTransform.setIdentity();
+		btVector3 localInertia(0, 0, 0);
+		if (m_mass > 0)
+			sphereBox->calculateLocalInertia(m_mass, localInertia);
+
+		startTransform.setOrigin(pos);
+		auto motionstate = new btDefaultMotionState(startTransform);
+		btRigidBody::btRigidBodyConstructionInfo rbInfo(m_mass, motionstate, sphereBox, localInertia);
+		m_rigid = new btRigidBody(rbInfo);
+		world->addRigidBody(m_rigid);
+
 		m_program = create_program();
 	}
 	
@@ -111,11 +126,20 @@ public:
 	{
 		glBindBuffer(GL_ARRAY_BUFFER, this->m_g);
 		bind_static_attribs();
+		glm::mat4 ModelMatrix(1.0f);
+		auto trans = m_rigid->getWorldTransform();
 
-		glm::mat4 model = glm::mat4(1.0f);
-		model[3][2] = 0.5f;
-		GLuint modelLoc = glGetUniformLocation(m_program, "model");
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		glm::value_ptr(ModelMatrix);
+		double mat[4][4] = {};
+		float matf[4][4];
+		trans.getOpenGLMatrix((btScalar*)& mat[0][0]);
+
+		for (int i = 0;i < 4;++i)
+			for (int j = 0;j < 4;++j)
+				matf[i][j] = mat[i][j];
+
+		auto loc = glGetUniformLocation(m_program, "model");
+		glUniformMatrix4fv(loc, 1, GL_FALSE, &matf[0][0]);
 
 		glm::mat4 view = camera.GetViewMatrix();
 		GLint viewLoc = glGetUniformLocation(m_program, "view");

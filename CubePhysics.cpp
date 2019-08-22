@@ -28,7 +28,7 @@ using namespace std;
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
-Camera camera(glm::vec3(0.0f, -0.9f, 0.8f));
+Camera camera(glm::vec3(0.0f, -0.9f, 1.8f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -218,10 +218,10 @@ int main()
 	std::vector<glm::mat4x3> facesC = cube_faces(false);
 	//Cube cuby(faces, { 0.24f, 0.4f,0.0f}, dynamicsWorld,1);
 	Cube cube(false, facesC, {-0.24f, 0.4f,0.0f}, dynamicsWorld,10);
-	Cube cuba(false, facesC, {-0.24f, 0.8f,0.0f }, dynamicsWorld,0);
+	//Cube cuba(false, facesC, {-0.04f, 0.8f,0.0f }, dynamicsWorld,1);
 	//cube->m_g = g;
 	Cube floor(true, faces, {0.0f, -0.95f, 0.0f}, dynamicsWorld, 0);
-	Sphere sphere(0.02f);
+	Sphere sphere({ 0.04f, 0.8f,0.0f }, dynamicsWorld, 0.02f, 1);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -236,8 +236,8 @@ int main()
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		cube.draw(camera);
-		/*cuba.draw(camera);
-		cuby.draw(camera);*/
+		//cuba.draw(camera);
+		/*cuby.draw(camera);*/
 		floor.draw(camera);
 		sphere.draw(camera);
 
