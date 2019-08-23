@@ -25,10 +25,12 @@ const char* vertexShaderSrc = GLSL(
 const char* fragmentShaderSrc = GLSL(
 	precision mediump float;
 	in vec2 texco1;
-	out vec4 FragColor;
 
+	uniform sampler2D sampler1;
+
+	out vec4 FragColor;
 	void main() {
-		FragColor = vec4(0.0f,1.0f,0.0f,0.0f);//(texture(sampler2, texco1) + texture(sampler1, texco1)) / 2.0;
+		FragColor = texture(sampler1, texco1.xy);
 	}
 );
 

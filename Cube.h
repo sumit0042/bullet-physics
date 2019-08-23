@@ -15,6 +15,60 @@
 const int no_rects = 6;
 
 
+GLuint loadBMP_custom(const char* imagepath)
+{
+	unsigned char header[54]; // Each BMP file begins by a 54-bytes header
+	unsigned int dataPos;     // Position in the file where the actual data begins
+	unsigned int width, height;
+	unsigned int imageSize;   // = width*height*3
+	// Actual RGB data
+	unsigned char* data;
+
+	FILE* file = fopen(imagepath, "rb");
+	if (!file)
+	{
+		printf("Image could not be opened\n"); return 0;
+	}
+	if (fread(header, 1, 54, file) != 54) { // If not 54 bytes read : problem
+		printf("Not a correct BMP file\n");
+		return false;
+	}
+
+	if (header[0] != 'B' || header[1] != 'M') {
+		printf("Not a correct BMP file\n");
+		return 0;
+	}
+
+	// Read ints from the byte array
+	dataPos = *(int*) & (header[0x0A]);
+	imageSize = *(int*) & (header[0x22]);
+	width = *(int*) & (header[0x12]);
+	height = *(int*) & (header[0x16]);
+	// Some BMP files are misformatted, guess missing information
+	if (imageSize == 0)    imageSize = width * height * 3; // 3 : one byte for each Red, Green and Blue component
+	if (dataPos == 0)      dataPos = 54; // The BMP header is done that way
+	// Create a buffer
+	data = new unsigned char[imageSize];
+	// Read the actual data from the file into the buffer
+	fread(data, 1, imageSize, file);
+	//Everything is in memory now, the file can be closed
+	fclose(file);
+
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	glBindTexture(GL_TEXTURE_2D, textureID);
+
+	// Give the image to OpenGL
+	glTexImage2D(GL_TEXTURE_2D, 0, 3, width, height, 0, GL_BGR, GL_UNSIGNED_BYTE, data);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	// "Bind" the newly created texture : all future texture functions will modify this texture
+	delete[] data;
+	return textureID;
+}
+
 GLuint create_program()
 {
 	GLuint program = glCreateProgram();
@@ -37,6 +91,12 @@ void bind_vert_n_texel(GLuint program)
 	glVertexAttribPointer(posAttrib, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 }
 
+void bind_texture(GLuint program, int texId)
+{
+	GLint locScale2 = glGetUniformLocation(program, "sampler1");
+	glUniform1i(locScale2, 1);
+}
+
 
 struct Vertex
 {
@@ -54,21 +114,15 @@ public:
 	GLuint program[no_rects];
 	std::vector<glm::mat4x3> m_faces;
 	Vertex m_c[no_rects][4];
+	GLuint m_texId;
 
-	Cube(bool floor, std::vector<glm::mat4x3> faces, btVector3 pos, btDiscreteDynamicsWorld* world, float m):mass(m)
+	Cube(btVector3 shape, std::vector<glm::mat4x3> faces, btVector3 pos, btDiscreteDynamicsWorld* world, float m, int texId):mass(m)
 	{
 		m_faces = faces;
 		m_bind_buffer();
-
+		m_texId = texId;
 		//physics
-		btBoxShape* box;
-		if (floor)
-		{
-			box = new btBoxShape({ 1.0f, 0.05f, 1.0f });
-		}
-		else {
-			box = new btBoxShape({ .2,.2,.2 });
-		}
+		btBoxShape* box = new btBoxShape(shape);
 		btTransform startTransform;
 		startTransform.setIdentity();
 		btVector3 localInertia(0, 0, 0);
@@ -124,6 +178,7 @@ public:
 		{
 			glUseProgram(program[i]);
 
+			bind_texture(this->program[i], m_texId);
 			glm::mat4 ModelMatrix(1.0f);
 			auto trans = m_rigid->getWorldTransform();
 
@@ -169,25 +224,25 @@ public:
 				m_c[i][j].z = m_faces[i][j].z;
 				switch (j)
 				{
-				case 0:
+				case 1:
 				{
 					m_c[i][j].tx = 0.0f;
 					m_c[i][j].ty = 0.0f;
 					break;
 				}
-				case 1:
+				case 2:
 				{
 					m_c[i][j].tx = 0.0f;
 					m_c[i][j].ty = 1.0f;
 					break;
 				}
-				case 2:
+				case 3:
 				{
 					m_c[i][j].tx = 1.0f;
 					m_c[i][j].ty = 1.0f;
 					break;
 				}
-				case 3:
+				case 0:
 				{
 					m_c[i][j].tx = 1.0f;
 					m_c[i][j].ty = 0.0f;
